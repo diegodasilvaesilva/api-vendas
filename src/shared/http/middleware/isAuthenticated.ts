@@ -16,24 +16,32 @@ export default function isAuthenticated(
   const authHeader = request.headers.authorization;
 
   if (!authHeader) {
+    console.log('JWT Token is missing.')
     throw new AppError('JWT Token is missing.');
   }
 
   const [, token] = authHeader.split(' ');
 
-  try {
+  verify(token, authConfig.jwt.secret, (err, decodedToken) => {
 
-    const decodedToken = verify(token, authConfig.jwt.secret);
-
-    const { sub } = decodedToken as ITokenPayload;
-
-    request.user = {
-      id: sub,
+    if (err === null) {
+      const { sub } = decodedToken as ITokenPayload;
+      request.user = {
+        id: sub,
+      }
+      return next();
     }
 
-    return next();
+    if (err.name === 'TokenExpiredError') {
+      throw new AppError('Whoops, your token has expired!', 401);
+    }
 
-  } catch (error) {
-    throw new AppError('Invalid JWT Token.');
-  }
+    if (err.name === 'JsonWebTokenError') {
+      throw new AppError('That JWT is malformed!', 401);
+    }
+
+    throw new AppError('Invalid JWT Token.', 401);
+
+  });
+
 }

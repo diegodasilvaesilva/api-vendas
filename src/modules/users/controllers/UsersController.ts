@@ -9,7 +9,7 @@ export default class UsersController {
 
     const users = await listUser.execute();
 
-    return response.json(users);
+    return response.json(classToClass(users));
   }
 
   public async create(request: Request, response: Response): Promise<Response> {
